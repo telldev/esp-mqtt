@@ -89,7 +89,8 @@ typedef enum {
     MQTT_TRANSPORT_OVER_TCP,      /*!< MQTT over TCP, using scheme: ``mqtt`` */
     MQTT_TRANSPORT_OVER_SSL,      /*!< MQTT over SSL, using scheme: ``mqtts`` */
     MQTT_TRANSPORT_OVER_WS,       /*!< MQTT over Websocket, using scheme:: ``ws`` */
-    MQTT_TRANSPORT_OVER_WSS       /*!< MQTT over Websocket Secure, using scheme: ``wss`` */
+    MQTT_TRANSPORT_OVER_WSS,      /*!< MQTT over Websocket Secure, using scheme: ``wss`` */
+    MQTT_TRANSPORT_OVER_CUSTOM    /*!< MQTT over custom transport, using scheme: ``custom`` */
 } esp_mqtt_transport_t;
 
 /**

@@ -7,6 +7,7 @@
 #include "esp_transport_tcp.h"
 #include "esp_transport_ssl.h"
 #include "esp_transport_ws.h"
+#include "esp_transport_custom.h"
 #include "mqtt_outbox.h"
 #include "mqtt_supported_features.h"
 
@@ -201,7 +202,8 @@ static esp_err_t esp_mqtt_set_cert_key_data(esp_transport_handle_t ssl, enum esp
 
 static esp_err_t esp_mqtt_set_ssl_transport_properties(esp_transport_list_handle_t transport_list, mqtt_config_storage_t *cfg)
 {
-    esp_transport_handle_t ssl = esp_transport_list_get_transport(transport_list, "mqtts");
+    esp_transport_handle_t ssl = esp_transport_list_get_transport(transport_list, "mqtts"),
+        custom = esp_transport_list_get_transport(transport_list, "custom");
 
     if (cfg->use_global_ca_store == true) {
         esp_transport_ssl_enable_global_ca_store(ssl);
@@ -209,6 +211,8 @@ static esp_err_t esp_mqtt_set_ssl_transport_properties(esp_transport_list_handle
         ESP_OK_CHECK(TAG, esp_mqtt_set_cert_key_data(ssl, MQTT_SSL_DATA_API_CA_CERT, cfg->cacert_buf, cfg->cacert_bytes),
                      goto esp_mqtt_set_transport_failed);
     }
+
+    esp_transport_custom_set_ca_cert(custom, cfg->cacert_buf, strlen(cfg->cacert_buf));
 
     if (cfg->use_secure_element) {
 #ifdef MQTT_SUPPORTED_FEATURE_SECURE_ELEMENT
@@ -514,6 +518,9 @@ esp_err_t esp_mqtt_set_config(esp_mqtt_client_handle_t client, const esp_mqtt_cl
         } else if (config->transport == MQTT_TRANSPORT_OVER_WSS) {
             cfg->scheme = create_string("wss", 3);
             ESP_MEM_CHECK(TAG, cfg->scheme, goto _mqtt_set_config_failed);
+        } else if (config->transport == MQTT_TRANSPORT_OVER_CUSTOM) {
+        client->config->scheme = create_string("custom", 6);
+            ESP_MEM_CHECK(TAG, cfg->scheme, goto _mqtt_set_config_failed);
         }
     }
 
@@ -703,6 +710,10 @@ esp_mqtt_client_handle_t esp_mqtt_client_init(const esp_mqtt_client_config_t *co
 
     esp_transport_list_add(client->transport_list, ssl, "mqtts");
 #endif
+
+    esp_transport_handle_t custom = esp_transport_custom_init();
+    ESP_MEM_CHECK(TAG, custom, goto _mqtt_init_failed);
+    esp_transport_list_add(client->transport_list, custom, "custom");
 
 #if MQTT_ENABLE_WSS
     esp_transport_handle_t wss = esp_transport_ws_init(ssl);
